@@ -17,7 +17,7 @@
 
 ---
 
-**ia-wiki-lms** is an open-source backend that plugs into Moodle via LTI 1.3 and transforms course materials into a structured, AI-curated wiki — paired with a contextual chatbot that *cites its sources and learns from each student's focus*.
+**ia-wiki-lms** is an open-source backend that plugs into any LTI 1.3-compatible LMS — Moodle, Canvas, Blackboard, and others — and transforms course materials into a structured, AI-curated wiki paired with a contextual chatbot that *cites its sources and learns from each student's focus*.
 
 ---
 
@@ -48,7 +48,7 @@ The conceptual seed comes from [Andrej Karpathy's LLM wiki gist](https://gist.gi
 
 **[ai-wiki-system](https://github.com/giovannifrontera/ai-wiki-system)** turned that sketch into a production-grade engine: atomic writes, crash recovery, semantic vector search with bge-m3, auto-synthesis, and self-healing lint.
 
-**ia-wiki-lms** takes the engine and deploys it natively inside Moodle — adding multi-tenancy, LTI authentication, an automatic ingest pipeline from course materials, and a student-level personalization layer that flat RAG cannot offer.
+**ia-wiki-lms** takes the engine and deploys it natively inside any LTI 1.3-compatible LMS — adding multi-tenancy, LTI authentication, an automatic ingest pipeline from course materials, and a student-level personalization layer that flat RAG cannot offer. Moodle is the primary reference implementation, but the architecture is LMS-agnostic by design.
 
 ### The key shift: wiki pages and vector embeddings as one
 
@@ -71,21 +71,21 @@ Karpathy's original sketch assumed the LLM would navigate the wiki by *reading* 
 
 They are kept in sync at all times. Update a page → vectors re-embedded. Delete a page → vectors removed. A lint pass detects and repairs any drift.
 
-**ia-wiki-lms** inherits this architecture and extends it to the educational context: course materials (PDF, PPTX) are processed through the same pipeline, with the addition of multi-tenancy (one isolated workspace per Moodle course) and per-student bookmark weighting on the vector retrieval layer.
+**ia-wiki-lms** inherits this architecture and extends it to the educational context: course materials (PDF, PPTX) are processed through the same pipeline, with the addition of multi-tenancy (one isolated workspace per LMS course) and per-student bookmark weighting on the vector retrieval layer.
 
 ### Evolution across the stack
 
 | Dimension | Karpathy's sketch | [ai-wiki-system](https://github.com/giovannifrontera/ai-wiki-system) | **ia-wiki-lms** |
 |---|:---:|:---:|:---:|
-| **Target** | Single agent/researcher | Any AI agent, local | Students + instructors in Moodle |
+| **Target** | Single agent/researcher | Any AI agent, local | Students + instructors in any LTI 1.3 LMS |
 | **Persistence** | Single flat file | Structured `wiki/` + `wiki-works/` dirs | Isolated workspace per course |
 | **Retrieval mechanism** | LLM reads markdown files | ✅ semantic vector search (never scans files) | ✅ inherited + bookmark weighting |
 | **Wiki + vectors sync** | Separate / unaddressed | ✅ atomic: write page = write embeddings | ✅ inherited |
-| **Multi-tenancy** | ✗ | ✗ | ✅ one workspace per Moodle course |
+| **Multi-tenancy** | ✗ | ✗ | ✅ one workspace per LMS course |
 | **Auto-synthesis** | ✗ | ✅ ≥ 2 sources + > 300 tokens → new page + embeddings | ✅ inherited + session context |
 | **Personalization** | ✗ | ✗ | ✅ bookmark-boosted RAG per student |
-| **LMS integration** | ✗ | ✗ | ✅ native LTI 1.3 (Moodle) |
-| **Ingest pipeline** | ✗ | Text / web content | ✅ automatic PDF/PPTX from Moodle API |
+| **LMS integration** | ✗ | ✗ | ✅ native LTI 1.3 (Moodle, Canvas, …) |
+| **Ingest pipeline** | ✗ | Text / web content | ✅ automatic PDF/PPTX from LMS API (Moodle included) |
 | **Explainability** | ✗ | ✅ citations in responses | ✅ clickable wiki links in chat UI |
 | **Self-healing lint** | ✗ | ✅ 11-check repair pass | ✅ inherited |
 | **Crash-safe writes** | ✗ | ✅ `.tmp → staging → production` | ✅ inherited |
@@ -96,12 +96,12 @@ They are kept in sync at all times. Update a page → vectors re-embedded. Delet
 
 ### For the instructor
 
-Upload slides and PDFs to Moodle as usual. ia-wiki-lms fetches them automatically via the Moodle REST API, processes them through the ingest pipeline, and populates a structured wiki for the course. No extra steps. No per-lesson configuration.
+Upload slides and PDFs to the LMS as usual. ia-wiki-lms fetches them automatically via the LMS REST API (Moodle's `core_course_get_contents` and compatible endpoints), processes them through the ingest pipeline, and populates a structured wiki for the course. No extra steps. No per-lesson configuration.
 
 ```
-Moodle course files (PDF, PPTX)
+LMS course files (PDF, PPTX)   ← Moodle, Canvas, or any LTI-compatible LMS
         ↓
-  Moodle REST API
+  LMS REST API
         ↓
   Ingest pipeline: extract → chunk → embed → wiki pages
         ↓
@@ -113,7 +113,7 @@ Moodle course files (PDF, PPTX)
 
 ### For the student
 
-Inside the Moodle course, an LTI activity opens a dual interface:
+Inside the LMS course (accessible as an LTI activity), students see a dual interface:
 
 - **Wiki panel** — a browsable network of concepts, entities, and synthesis pages. Each page is a Markdown document the student can read, bookmark, and navigate.
 - **Chat panel** — a conversational assistant that answers questions by querying the wiki semantically. Every response cites the specific wiki pages it drew from as clickable links.
@@ -132,7 +132,7 @@ When a response integrates ≥ 2 wiki sources and produces > 300 tokens of non-l
 
 ```mermaid
 flowchart TD
-    M([Moodle LMS]) -- LTI 1.3 launch --> L[FastAPI\nia-wiki-lms]
+    M([LMS — Moodle · Canvas · …]) -- LTI 1.3 launch --> L[FastAPI\nia-wiki-lms]
     M -- REST API token --> I[Ingest pipeline\nPDF / PPTX]
 
     L --> DB[(SQLite / PostgreSQL\nCourse · Student\nWikiPage · Bookmark)]
@@ -182,7 +182,7 @@ A systematic review of **308 studies** on AI agents in LMS environments (PRISMA 
 ✅ FastAPI server · LTI 1.3 launch endpoint
 ✅ SQLAlchemy schema: Course, Student, WikiPage, Bookmark, ChatSession
 ✅ Automatic course workspace on first LTI launch
-✅ Moodle REST client: list + download PDF/PPTX
+✅ LMS REST client: list + download PDF/PPTX (Moodle implementation)
 ✅ Instructor / student role distinction
 ✅ AGPL-3.0 license
 
@@ -216,7 +216,7 @@ A systematic review of **308 studies** on AI agents in LMS environments (PRISMA 
 git clone https://github.com/giovannifrontera/ia-wiki-lms
 cd ia-wiki-lms
 pip install -r requirements.txt
-cp .env.example .env        # fill in Moodle credentials + LLM API key
+cp .env.example .env        # fill in LMS credentials (Moodle token) + LLM API key
 uvicorn app.main:app --reload --port 8000
 # → GET http://localhost:8000/health  →  {"status": "ok"}
 ```
