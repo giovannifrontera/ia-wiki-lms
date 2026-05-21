@@ -21,9 +21,9 @@ MOCK_INSTRUCTOR_DATA = {
 }
 
 @pytest.fixture
-def app_with_db(tmp_path):
-    import os
-    os.environ["DATABASE_URL"] = f"sqlite:///{tmp_path}/test.db"
+def app_with_db(tmp_path, monkeypatch):
+    db_url = f"sqlite:///{tmp_path}/test.db"
+    monkeypatch.setenv("DATABASE_URL", db_url)
     from importlib import reload
     import app.db.session as s
     reload(s)
