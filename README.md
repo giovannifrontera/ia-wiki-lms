@@ -50,15 +50,39 @@ The conceptual seed comes from [Andrej Karpathy's LLM wiki gist](https://gist.gi
 
 **ia-wiki-lms** takes the engine and deploys it natively inside Moodle — adding multi-tenancy, LTI authentication, an automatic ingest pipeline from course materials, and a student-level personalization layer that flat RAG cannot offer.
 
+### The key shift: wiki pages and vector embeddings as one
+
+Karpathy's original sketch assumed the LLM would navigate the wiki by *reading* its markdown files — visual inspection of a directory structure. This works for a handful of pages but breaks down at scale: the agent cannot scan dozens of files on every query.
+
+**ai-wiki-system** solved this with a dual-representation architecture: every wiki page is written as both a markdown file and a set of vector embeddings **in the same atomic operation**. The markdown is for human navigation and LLM generation; the vectors are for semantic retrieval. The LLM never scans the wiki — it queries it.
+
+```
+  Write a wiki page (ingest)
+          │
+          ▼
+  ┌───────────────────┐     ┌──────────────────────────┐
+  │  Markdown file    │     │  LanceDB vector store     │
+  │  concepts/rag.md  │◄────►  bge-m3 embeddings        │
+  │  (human-readable) │     │  (semantic retrieval)     │
+  └───────────────────┘     └──────────────────────────┘
+      humans navigate            LLM retrieves
+      LLM generates              by meaning, not keyword
+```
+
+They are kept in sync at all times. Update a page → vectors re-embedded. Delete a page → vectors removed. A lint pass detects and repairs any drift.
+
+**ia-wiki-lms** inherits this architecture and extends it to the educational context: course materials (PDF, PPTX) are processed through the same pipeline, with the addition of multi-tenancy (one isolated workspace per Moodle course) and per-student bookmark weighting on the vector retrieval layer.
+
 ### Evolution across the stack
 
 | Dimension | Karpathy's sketch | [ai-wiki-system](https://github.com/giovannifrontera/ai-wiki-system) | **ia-wiki-lms** |
 |---|:---:|:---:|:---:|
 | **Target** | Single agent/researcher | Any AI agent, local | Students + instructors in Moodle |
 | **Persistence** | Single flat file | Structured `wiki/` + `wiki-works/` dirs | Isolated workspace per course |
+| **Retrieval mechanism** | LLM reads markdown files | ✅ semantic vector search (never scans files) | ✅ inherited + bookmark weighting |
+| **Wiki + vectors sync** | Separate / unaddressed | ✅ atomic: write page = write embeddings | ✅ inherited |
 | **Multi-tenancy** | ✗ | ✗ | ✅ one workspace per Moodle course |
-| **Semantic retrieval** | ✗ | ✅ bge-m3 + LanceDB (HNSW) | ✅ inherited + bookmark weighting |
-| **Auto-synthesis** | ✗ | ✅ ≥ 2 sources + > 300 tokens | ✅ inherited + session context |
+| **Auto-synthesis** | ✗ | ✅ ≥ 2 sources + > 300 tokens → new page + embeddings | ✅ inherited + session context |
 | **Personalization** | ✗ | ✗ | ✅ bookmark-boosted RAG per student |
 | **LMS integration** | ✗ | ✗ | ✅ native LTI 1.3 (Moodle) |
 | **Ingest pipeline** | ✗ | Text / web content | ✅ automatic PDF/PPTX from Moodle API |
