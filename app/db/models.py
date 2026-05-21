@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, DateTime, ForeignKey, JSON, func
+from sqlalchemy import Column, String, DateTime, ForeignKey, JSON, UniqueConstraint, func
 from sqlalchemy.orm import DeclarativeBase, relationship
 
 
@@ -23,6 +23,9 @@ class Student(Base):
     student_id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     moodle_user_id = Column(String, nullable=False)
     course_id = Column(String, ForeignKey("courses.course_id"), nullable=False)
+    __table_args__ = (
+        UniqueConstraint("moodle_user_id", "course_id", name="uq_student_per_course"),
+    )
     course = relationship("Course", back_populates="students")
     bookmarks = relationship("Bookmark", back_populates="student")
     chat_sessions = relationship("ChatSession", back_populates="student")
@@ -44,7 +47,7 @@ class Bookmark(Base):
     __tablename__ = "bookmarks"
     id = Column(String, primary_key=True)  # "{student_id}:{page_path}"
     student_id = Column(String, ForeignKey("students.student_id"), nullable=False)
-    course_id = Column(String, nullable=False)
+    course_id = Column(String, ForeignKey("courses.course_id"), nullable=False)
     page_path = Column(String, nullable=False)
     created_at = Column(DateTime, server_default=func.now())
     student = relationship("Student", back_populates="bookmarks")
