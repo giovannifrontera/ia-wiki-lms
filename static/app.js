@@ -223,6 +223,7 @@
   // D3 Graph
   // ---------------------------------------------------------------------------
   function renderGraph() {
+    if (state.simulation) { state.simulation.stop(); state.simulation = null; }
     const { nodes, edges } = state.graphData;
     const svg = d3.select("#graph-svg");
     svg.selectAll("*").remove();
