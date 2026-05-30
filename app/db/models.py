@@ -43,6 +43,19 @@ class WikiPage(Base):
     course = relationship("Course", back_populates="wiki_pages")
 
 
+class PageLink(Base):
+    __tablename__ = "page_links"
+    id = Column(String, primary_key=True)  # "{course_id}:{source}:{target}"
+    course_id = Column(String, ForeignKey("courses.course_id"), nullable=False)
+    source_path = Column(String, nullable=False)
+    target_path = Column(String, nullable=False)
+    weight = Column(String, nullable=False)  # float serializzato come string (SQLite compat)
+    link_type = Column(String, nullable=False, default="semantic")
+    __table_args__ = (
+        UniqueConstraint("course_id", "source_path", "target_path", name="uq_page_link"),
+    )
+
+
 class Bookmark(Base):
     __tablename__ = "bookmarks"
     id = Column(String, primary_key=True)  # "{student_id}:{page_path}"
