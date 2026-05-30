@@ -160,13 +160,20 @@ async def lti_launch(request: Request, db=Depends(get_db)):
     safe_student_id = _html.escape(student_id)
 
     html_response = f"""<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>ia-wiki-lms</title></head>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ia-wiki-lms</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
 <body
-  data-role='{safe_role}'
-  data-course='{safe_course_id}'
-  data-student='{safe_student_id}'
+  data-role="{safe_role}"
+  data-course="{safe_course_id}"
+  data-student="{safe_student_id}"
 >
+  <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="/static/app.js"></script>
 </body>
 </html>"""
