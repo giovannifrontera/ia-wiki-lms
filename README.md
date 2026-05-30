@@ -1,4 +1,4 @@
-<div align="center">
+﻿<div align="center">
 
 # 🧠 ai-wiki-graph-RAG-lms
 
@@ -36,7 +36,7 @@ The system operates as a digital scaffold (Vygotsky, 1978): it supports the stud
 Building directly on [Karpathy's LLM-Wiki concept](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f), the system maintains a **dual representation** of course knowledge: human-readable Markdown for navigation and transparency, and a vector store for high-recall semantic retrieval. The two layers are kept in atomic synchronisation — what the student reads is exactly what the AI retrieves.
 
 ### IMS Global LTI 1.3
-Integration follows the [IMS Global LTI 1.3 Core Specification](https://www.imsglobal.org/spec/lti/v1p3/), including the full OIDC third-party launch flow. This ensures native compatibility with any compliant LMS (Moodle, Canvas, Blackboard) without requiring plugin installation or custom authentication systems.
+Integration follows the [IMS Global LTI 1.3 Core Specification](https://www.imsglobal.org/spec/lti/v1p3/), including the full OIDC third-party launch flow. This ensures native compatibility with any compliant LMS (Moodle, Canvas, Blackboard, Sakai, and Open edX, Sakai, Open edX) without requiring plugin installation or custom authentication systems.
 
 ### Bloom's Taxonomy — Upper Cognitive Levels
 The Auto-Synthesis engine targets the upper levels of Bloom's revised taxonomy (Anderson & Krathwohl, 2001): when the system identifies non-obvious connections between retrieval sources, it generates a new synthesis wiki page — moving the student from *remembering* and *understanding* toward *analysing* and *evaluating*.
@@ -93,6 +93,7 @@ After each page upsert, `compute_links()` performs an ANN search against the exi
 | Scheduler | APScheduler | 3.11 |
 | Extraction | PyPDF2 · python-pptx | — |
 | LLM | Anthropic SDK / OpenAI SDK | — |
+> **Note:** `LLM_PROVIDER` supports `anthropic` and `openai` out of the box. For any other provider (Mistral, Gemini, local models), see the [OpenClaw variant](https://github.com/giovannifrontera/ai-longterm-wiki-memory-OpenClaw) which is fully LLM-agnostic.
 | Frontend | Vanilla JS · D3.js v7 · marked.js | — |
 
 ### Database Schema
@@ -208,11 +209,12 @@ Open: `http://localhost:8000/dev/launch?course_id=demo&role=student`
 
 This project is part of a coherent research toolchain for AI-augmented academic knowledge management:
 
-| Project | Role |
-|---|---|
-| **ai-wiki-graph-RAG-lms** ← *you are here* | LTI 1.3 backend — transforms course materials into a navigable wiki with RAG and knowledge graph |
-| [ai-longterm-wiki-memory-ClaudeCode](https://github.com/giovannifrontera/ai-longterm-wiki-memory-ClaudeCode) | Persistent semantic memory layer for AI agents — the memory engine that powers the wiki |
-| [academic-PRISMA-research-workflow](https://github.com/giovannifrontera/academic-PRISMA-research-workflow) | Systematic review automation — feeds evidence-based content into the wiki ecosystem |
+| Project | LLM | Role |
+|---|---|---|
+| **ai-wiki-graph-RAG-lms** ← *you are here* | Anthropic / OpenAI | LTI 1.3 backend for Moodle, Canvas, Blackboard, Sakai, Open edX |
+| [ai-longterm-wiki-memory-ClaudeCode](https://github.com/giovannifrontera/ai-longterm-wiki-memory-ClaudeCode) | Claude | Native Claude Code integration — MCP + hooks |
+| [ai-longterm-wiki-memory-OpenClaw](https://github.com/giovannifrontera/ai-longterm-wiki-memory-OpenClaw) | Any (LLM-agnostic) | OpenClaw plugin — works with any model via Telegram, Discord, web |
+| [academic-PRISMA-research-workflow](https://github.com/giovannifrontera/academic-PRISMA-research-workflow) | Claude | Systematic review automation — feeds evidence-based content into the wiki |
 
 ---
 
